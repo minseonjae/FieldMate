@@ -1,6 +1,7 @@
 package kr.codingtree.fieldmate;
 
 import kr.codingtree.fieldmate.serializer.ValueSerializer;
+import kr.codingtree.fieldmate.serializer.defaults.UUIDSerializer;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -16,7 +17,11 @@ public class FieldMate {
     }
 
     @Getter
-    private ArrayList<ValueSerializer> serializers;
+    private ArrayList<ValueSerializer> serializers = null;
+
+    public void init() {
+        serializers.add(new UUIDSerializer());
+    }
 
     @SneakyThrows
     public boolean registerSerializer(Object object) {
