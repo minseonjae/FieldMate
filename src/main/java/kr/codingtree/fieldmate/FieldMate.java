@@ -3,11 +3,15 @@ package kr.codingtree.fieldmate;
 import kr.codingtree.fieldmate.serializer.ValueSerializer;
 import kr.codingtree.fieldmate.serializer.defaults.UUIDSerializer;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.io.File;
+import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.*;
 
 @UtilityClass
 public class FieldMate {
@@ -67,5 +71,76 @@ public class FieldMate {
 
     public boolean hasSerializer(Object clazz) {
         return serializers.stream().anyMatch(serializer -> serializer.equals(clazz));
+    }
+
+    public void clearSerializers() {
+        serializers.clear();
+    }
+
+    public Object serializer(Field field, Object fieldValue) {
+        if (fieldValue instanceof Map && field.getGenericType() instanceof ParameterizedType) {
+            Type[] types = ((ParameterizedType) field.getGenericType()).getActualTypeArguments();
+
+            if (types.length == 2) {
+                ValueSerializer keySerializer = getSerializer(types[0]),
+                        valueSerializer = getSerializer(types[1]);
+
+                if ((keySerializer == null && !isDefaultClass(types[0].getTypeName())) || (valueSerializer == null && !isDefaultClass(types[1].getTypeName()))) {
+                    return null;
+                }
+
+                Map<?, ?> map = (Map<?, ?>) fieldValue;
+                LinkedHashMap<String, String> result = new LinkedHashMap<>();
+
+                for (Map.Entry<?, ?> entry : map.entrySet()) {
+                    String key = keySerializer != null ? keySerializer.serializer(entry.getKey()) : String.valueOf(entry.getKey()),
+                            value = valueSerializer != null ? valueSerializer.serializer(entry.getValue()) : String.valueOf(entry.getValue());
+
+                    result.put(key, value);
+                }
+
+                return result;
+            }
+        } else if (fieldValue instanceof Collection && field.getGenericType() instanceof ParameterizedType) {
+            Type[] types = ((ParameterizedType) field.getGenericType()).getActualTypeArguments();
+
+            if (types.length == 1) {
+                if (isDefaultClass(types[0].getTypeName())) {
+                    return fieldValue;
+                }
+
+                ValueSerializer valueSerializer = getSerializer(types[0]);
+
+                if (valueSerializer == null) {
+                    return null;
+                }
+
+                Collection<?> collection = (Collection<?>) fieldValue;
+                ArrayList<String> result = new ArrayList<>();
+
+                for (Object object : collection) {
+                    result.add(valueSerializer.serializer(object));
+                }
+
+                return result;
+            }
+        } else {
+            ValueSerializer valueSerializer = getSerializer(fieldValue);
+
+            if (valueSerializer != null) {
+                return valueSerializer.serializer(fieldValue);
+            } else if (fieldValue != null && isDefaultClass(fieldValue.getClass().getName())) {
+                return fieldValue;
+            }
+        }
+        return null;
+    }
+
+    public Object deserialize(Field field, Object fieldValue, Object fileValue) {
+        return null;
+    }
+
+    public boolean isDefaultClass(String name) {
+        return name.startsWith("java.lang.");
     }
 }
