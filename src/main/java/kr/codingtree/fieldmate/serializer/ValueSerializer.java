@@ -11,7 +11,7 @@ public abstract class ValueSerializer<V> {
         return (Class) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
     }
 
-    public final boolean equals(Object object) {
+    public final boolean canSerialize(Object object) {
         Class clazz = getGenericClass();
         return (object instanceof Class && object.equals(clazz)) || object.getClass().equals(clazz);
     }
