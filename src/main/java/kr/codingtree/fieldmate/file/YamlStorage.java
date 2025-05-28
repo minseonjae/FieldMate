@@ -9,7 +9,7 @@ import org.yaml.snakeyaml.representer.Representer;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class YamlFile extends FileType {
+public class YamlStorage extends FileStorage {
 
     private DumperOptions dumperOptions = null;
     private Constructor constructor = null;

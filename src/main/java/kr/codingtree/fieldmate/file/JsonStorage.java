@@ -6,7 +6,7 @@ import com.google.gson.GsonBuilder;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class JsonFile extends FileType {
+public class JsonStorage extends FileStorage {
 
     private Gson gson = null;
     private GsonBuilder gsonBuilder = null;
@@ -27,4 +27,5 @@ public class JsonFile extends FileType {
         }
         return gson.fromJson(data, LinkedHashMap.class);
     }
+
 }

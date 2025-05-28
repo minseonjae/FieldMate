@@ -8,8 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public abstract class FileType {
-
+public abstract class FileStorage {
 
     @SneakyThrows(IOException.class)
     private void createFile(File file) {
@@ -36,14 +35,14 @@ public abstract class FileType {
         String line;
 
         while ((line = br.readLine()) != null) {
-            sb.append(line + "\n");
+            sb.append(line).append("\n");
         }
 
         return stringToMap(sb.toString());
     }
 
     @SneakyThrows(IOException.class)
-    public boolean save(File file, Map<String, Object> data) {
+    public void save(File file, Map<String, Object> data) {
         if (!file.exists()) {
             createFile(file);
         }
@@ -53,10 +52,10 @@ public abstract class FileType {
         @Cleanup BufferedWriter bw = new BufferedWriter(osw);
 
         bw.write(mapToString(data));
-
-        return true;
     }
 
     public abstract String mapToString(Map<String, Object> data);
+
     public abstract LinkedHashMap<String, Object> stringToMap(String data);
+
 }
