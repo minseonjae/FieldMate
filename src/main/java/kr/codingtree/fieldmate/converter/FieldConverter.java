@@ -18,6 +18,10 @@ public class FieldConverter {
     private final ConverterRegistry registry;
 
     public Object serialize(Field field, Object fieldValue) {
+        if (field == null || fieldValue == null) {
+            return null;
+        }
+
         if (fieldValue instanceof Map && field.getGenericType() instanceof ParameterizedType) {
             Type[] types = ((ParameterizedType) field.getGenericType()).getActualTypeArguments();
 
@@ -64,13 +68,13 @@ public class FieldConverter {
 
                 return result;
             }
+        } else if (isDefaultClass(fieldValue.getClass().getName())) {
+            return fieldValue;
         } else {
             ValueConverter valueSerializer = registry.getConverter(fieldValue);
 
             if (valueSerializer != null) {
                 return valueSerializer.serialize(fieldValue);
-            } else if (fieldValue != null && isDefaultClass(fieldValue.getClass().getName())) {
-                return fieldValue;
             }
         }
         return null;
@@ -78,6 +82,10 @@ public class FieldConverter {
 
     @SneakyThrows(Exception.class)
     public Object deserialize(Field field, Object fieldValue, Object fileValue) {
+        if (field == null || fileValue == null) {
+            return null;
+        }
+
         if (fieldValue instanceof Map && field.getGenericType() instanceof ParameterizedType) {
             Type[] types = ((ParameterizedType) field.getGenericType()).getActualTypeArguments();
 
@@ -86,13 +94,13 @@ public class FieldConverter {
                         valueSerializer = registry.getConverter(types[1]);
 
                 if ((keySerializer == null && !isDefaultClass(types[0].getTypeName())) || (valueSerializer == null && !isDefaultClass(types[1].getTypeName()))) {
-                    return null;
+                    return fieldValue;
                 }
 
                 Map result = (Map) fieldValue.getClass().newInstance();
                 LinkedHashMap<String, Object> map = (LinkedHashMap<String, Object>) fileValue;
 
-                for (Map.Entry<String , Object> entry : map.entrySet()) {
+                for (Map.Entry<String, Object> entry : map.entrySet()) {
                     Object key = keySerializer != null ? keySerializer.deserialize(entry.getKey()) : String.valueOf(entry.getKey()),
                             value = valueSerializer != null ? valueSerializer.deserialize(entry.getValue().toString()) : String.valueOf(entry.getValue());
 
@@ -112,7 +120,7 @@ public class FieldConverter {
                 ValueConverter valueSerializer = registry.getConverter(types[0]);
 
                 if (valueSerializer == null) {
-                    return null;
+                    return fieldValue;
                 }
 
                 Collection result = (Collection) fieldValue;
@@ -124,24 +132,31 @@ public class FieldConverter {
 
                 return result;
             }
-        } else if (isDefaultClass(fieldValue.getClass().getName())) {
-            if (fieldValue instanceof String) {
-                return String.valueOf(fileValue);
-            } else if (fieldValue instanceof Integer) {
+        } else if (isDefaultClass(fileValue.getClass().getName())) {
+            if (field.getType().isPrimitive() && fileValue instanceof Number) {
+                Number numValue = (Number) fileValue;
+
                 try {
-                    return Integer.parseInt(String.valueOf(fileValue));
-                } catch (NumberFormatException e) {}
-            } else if (fieldValue instanceof Double) {
-                try {
-                    return Double.parseDouble(String.valueOf(fileValue));
-                } catch (NumberFormatException e) {}
-            } else if (fieldValue instanceof Float) {
-                try {
-                    return Float.parseFloat(String.valueOf(fileValue));
-                } catch (NumberFormatException e) {}
-            } else if (fieldValue instanceof Boolean) {
-                return Boolean.parseBoolean(String.valueOf(fileValue));
-            }
+                    if (field.getType() == int.class || field.getType() == Integer.class) {
+                        return numValue.intValue();
+                    } else if (field.getType() == long.class || field.getType() == Long.class) {
+                        return numValue.longValue();
+                    } else if (field.getType() == double.class || field.getType() == Double.class) {
+                        return numValue.doubleValue();
+                    } else if (field.getType() == float.class || field.getType() == Float.class) {
+                        return numValue.floatValue();
+                    } else if (field.getType() == short.class || field.getType() == Short.class) {
+                        return numValue.shortValue();
+                    } else if (field.getType() == byte.class || field.getType() == Byte.class) {
+                        return numValue.byteValue();
+                    }
+                } catch (NumberFormatException e) {
+                }
+            } else if (field.getType() == boolean.class || field.getType() == Boolean.class) {
+                 return Boolean.parseBoolean(String.valueOf(fileValue));
+             }
+
+            return fileValue;
         } else {
             ValueConverter valueSerializer = registry.getConverter(fieldValue);
 
@@ -149,11 +164,11 @@ public class FieldConverter {
                 return valueSerializer.deserialize(String.valueOf(fileValue));
             }
         }
-        return null;
+        return fieldValue;
     }
 
     public boolean isDefaultClass(String name) {
-        return name.startsWith("java.lang.");
+        return name != null && name.startsWith("java.lang");
     }
 
 }

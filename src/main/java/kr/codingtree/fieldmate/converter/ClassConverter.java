@@ -15,6 +15,14 @@ public class ClassConverter {
 
     private final FieldConverter converter;
 
+    public void load(File file, Class<? extends FileStorage> fileType, Object loadClass) {
+        try {
+            load(file, fileType.newInstance(), loadClass);
+        } catch (InstantiationException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
     @SneakyThrows(Exception.class)
     public void load(File file, FileStorage fileType, Object loadClass) {
         LinkedHashMap<String, Object> map = fileType.load(file);
@@ -38,6 +46,14 @@ public class ClassConverter {
                     field.set(loadClass, value);
                 }
             }
+        }
+    }
+
+    public void save(File file, Class<? extends FileStorage> fileType, Object saveClass) {
+        try {
+            save(file, fileType.newInstance(), saveClass);
+        } catch (InstantiationException | IllegalAccessException e) {
+            e.printStackTrace();
         }
     }
 
